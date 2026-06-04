@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="안전점검">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a3a5c">
+<title>종합전기 안전관리 시스템</title>
+<link rel="manifest" id="manifest-placeholder">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: #f0f2f5; font-family: 'Noto Sans KR', sans-serif; }
+
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #f0f2f5; position: relative; }
+
+  /* HEADER & NAV */
+  .header {
+    background: linear-gradient(135deg, #1a3a5c 0%, #0f2540 100%);
+    color: white;
+    padding: 52px 20px 18px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .back-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; display: none; padding: 0 4px 0 0; }
+  .header h1 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 7px; flex: 1; line-height: 1.3; }
+  .header-sub { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+  
+  .prog-container { margin-top: 12px; }
+  .prog-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .prog-label { font-size: 12px; opacity: 0.85; }
+  .prog-pct { font-size: 13px; font-weight: 700; color: #4fc38a; }
+  .prog-bar { background: rgba(255,255,255,0.2); border-radius: 99px; height: 5px; }
+  .prog-fill { background: #4fc38a; border-radius: 99px; height: 5px; transition: width 0.35s ease; }
+
+  /* PAGES (1p, 2p, 3p) */
+  .view { display: none; padding: 14px; }
+  .view.active { display: block; }
+  #view-checklist { padding: 12px 14px 220px; } 
+
+  /* 1p: HOME (SITE LIST) */
+  .section-main-title { font-size: 14px; font-weight: 700; color: #1a3a5c; margin: 6px 4px 12px; display: flex; align-items: center; gap: 6px; }
+  .site-list { display: flex; flex-direction: column; gap: 10px; }
+  .site-card {
+    background: white; border-radius: 12px; padding: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04); cursor: pointer; transition: all 0.15s;
+    border: 1px solid #e8eef4;
+  }
+  .site-card:active { transform: scale(0.98); background: #f8f9fb; }
+  .site-name { font-size: 14px; font-weight: 500; color: #1a2a3a; }
+  .site-arrow { color: #aaa; font-size: 14px; }
+
+  /* 2p: CALENDAR DASHBOARD */
+  .cal-card { background: white; border-radius: 14px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 14px; }
+  .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-weight: 700; color: #1a3a5c; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; }
+  .cal-day-label { font-size: 11px; font-weight: 500; color: #999; padding-bottom: 4px; }
+  .cal-cell {
+    aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; position: relative; background: #f8f9fb;
+  }
+  .cal-cell.empty { background: none; cursor: default; }
+  .cal-cell.today { border: 2px solid #1a3a5c; font-weight: 700; background: #e8f0f8; }
+  
+  /* 달력 내 상태 점 표시 */
+  .cal-dot { width: 5px; height: 5px; border-radius: 50%; position: absolute; bottom: 4px; }
+  .cal-dot.dot-ok { background: #27ae60; }
+  .cal-dot.dot-ng { background: #e74c3c; }
+
+  /* 3p: CHECKLIST MAIN ELEMENTS */
+  .info-card {
+    background: white; border-radius: 14px; padding: 14px;
+    display: flex; gap: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); margin-bottom: 12px;
+  }
+  .info-card input {
+    flex: 1; border: 1px solid #e0e4ea; border-radius: 8px;
+    padding: 9px 12px; font-size: 13px; font-family: inherit;
+    color: #1a2a3a; background: #f8f9fb; outline: none;
+  }
+  .info-card input:focus { border-color: #1a3a5c; background: white; }
+
+  .stat-bar {
+    background: white; border-radius: 14px; padding: 12px 6px;
+    display: flex; justify-content: space-around; box-shadow: 0 1px 4px rgba(0,0,0,0.07); margin-bottom: 16px;
+  }
+  .stat { text-align: center; }
+  .stat-num { font-size: 24px; font-weight: 700; }
+  .stat-num.ok { color: #27ae60; }
+  .stat-num.ng { color: #e74c3c; }
+  .stat-num.na { color: #2980b9; }
+  .stat-num.re { color: #aaa; }
+  .stat-label { font-size: 11px; color: #888; margin-top: 1px; }
+  .stat-divider { width: 1px; background: #eee; margin: 4px 0; }
+
+  /* SECTIONS & ITEMS */
+  .section { margin-bottom: 14px; }
+  .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; user-select: none; }
+  .section-title { font-size: 13px; font-weight: 700; color: #1a3a5c; }
+  .section-badge { font-size: 10px; background: #e8f0f8; color: #1a3a5c; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+  .section-count { margin-left: auto; font-size: 11px; color: #aaa; }
+  .section-chevron { font-size: 14px; color: #aaa; transition: transform 0.2s; }
+  .section-header.collapsed .section-chevron { transform: rotate(-90deg); }
+  .section-items { transition: all 0.2s; }
+  .section-items.hidden { display: none; }
+
+  /* ITEM CARD & BUTTONS */
+  .item-wrapper {
+    background: white; border-radius: 12px; margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1.5px solid transparent;
+    overflow: hidden; transition: all 0.15s;
+  }
+  .item-wrapper.ok { border-color: #4fc38a; background: #f2fbf6; }
+  .item-wrapper.ng { border-color: #e74c3c; background: #fff5f5; }
+  .item-wrapper.na { border-color: #bdc3c7; background: #f4f6f7; }
+
+  .item-main { display: flex; align-items: flex-start; gap: 10px; padding: 12px 10px; cursor: pointer; }
+  
+  .chk-circle {
+    width: 22px; height: 22px; border-radius: 50%; border: 2px solid #ddd; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; margin-top: 1px; transition: all 0.15s;
+  }
+  .item-wrapper.ok .chk-circle { background: #4fc38a; border-color: #4fc38a; }
+  .chk-svg { display: none; }
+  .item-wrapper.ok .chk-svg { display: block; }
+
+  .item-label { flex: 1; font-size: 13px; line-height: 1.5; color: #222; }
+  .item-wrapper.ok .item-label { color: #888; text-decoration: line-through; text-decoration-color: #4fc38a; }
+  .item-wrapper.na .item-label { color: #bbb; }
+
+  .btn-group { display: flex; gap: 4px; flex-shrink: 0; }
+  .action-btn {
+    font-size: 11px; font-family: inherit; border: 1px solid #ddd; border-radius: 6px;
+    padding: 4px 8px; cursor: pointer; background: white; color: #666; transition: all 0.15s;
+  }
+  .action-btn.btn-ng { background: #fff0f0; color: #c0392b; border-color: #f5c6c6; }
+  
+  .item-wrapper.ng .action-btn.btn-ng { background: #e74c3c; color: white; border-color: #e74c3c; }
+  .item-wrapper.na .action-btn.btn-na { background: #7f8c8d; color: white; border-color: #7f8c8d; }
+
+  /* 부적합 서브 입력 폼 */
+  .ng-form { display: none; padding: 12px; background: #fff; border-top: 1px dashed #f5c6c6; }
+  .item-wrapper.ng .ng-form { display: block; }
+  
+  .ng-form-title { font-size: 12px; font-weight: 700; color: #c0392b; margin-bottom: 6px; }
+  .ng-textarea {
+    width: 100%; height: 60px; border: 1px solid #e0e4ea; border-radius: 6px;
+    padding: 8px; font-size: 12px; font-family: inherit; resize: none; outline: none;
+    background: #fafafa; color: #222; margin-bottom: 8px;
+  }
+  .ng-textarea:focus { border-color: #e74c3c; background: #fff; }
+
+  .photo-row { display: flex; gap: 8px; margin-bottom: 6px; }
+  .photo-col { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  
+  .file-label {
+    display: block; width: 100%; padding: 8px 0; border: 1px dashed #cbd5e1;
+    border-radius: 6px; background: #f8fafc; font-size: 11px; font-weight: 500;
+    color: #475569; text-align: center; cursor: pointer; transition: all 0.15s;
+  }
+  .file-label:active { background: #f1f5f9; }
+  .hidden-file { display: none; }
+  
+  .img-preview {
+    width: 100%; height: 70px; object-fit: cover; border-radius: 6px;
+    border: 1px solid #e2e8f0; display: none;
+  }
+
+  /* BOTTOM BAR */
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px;
+    background: white; padding: 12px 14px 24px; border-top: 1px solid #eee; box-shadow: 0 -4px 16px rgba(0,0,0,0.08); z-index: 110;
+  }
+  .submit-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
+    font-family: inherit; color: white; background: #1a3a5c; cursor: pointer; transition: all 0.2s;
+  }
+  .submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .submit-btn.all-ok { background: #27ae60; }
+  .submit-btn.has-ng { background: #e74c3c; }
+  .btn-row { display: flex; gap: 8px; margin-top: 8px; }
+  .reset-btn { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 10px; font-size: 13px; font-family: inherit; background: white; color: #666; cursor: pointer; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 230px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1a3a5c; color: white; padding: 12px 20px; border-radius: 99px;
+    font-size: 14px; font-weight: 500; opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 200;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { background: #27ae60; }
+  .toast.warning { background: #e74c3c; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="nav-row">
+      <button class="back-btn" id="back-btn" onclick="handleBackBtnClick()">⬅️</button>
+      <h1 id="main-title">🏢 종합전기 현장 안전관리</h1>
+    </div>
+    <div class="header-sub" id="today-date"></div>
+    <div class="prog-container" id="prog-container" style="display:none;">
+      <div class="prog-row">
+        <span class="prog-label" id="prog-text">0 / 0 항목</span>
+        <span class="prog-pct" id="prog-pct">0%</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="view active" id="view-home">
+    <div class="section-main-title">📍 안전점검 대상 현장 목록</div>
+    <div class="site-list" id="site-list-container"></div>
+  </div>
+
+  <div class="view" id="view-calendar">
+    <div class="section-main-title">📅 월간 점검 현황 및 일정</div>
+    <div class="cal-card">
+      <div class="cal-header" id="cal-month-title">2026년 6월</div>
+      <div class="cal-grid" id="cal-grid-container"></div>
+    </div>
+  </div>
+
+  <div class="view" id="view-checklist">
+    <div class="info-card">
+      <input id="worker-name" placeholder="👤 작업자 이름" type="text">
+      <input id="work-site" placeholder="📍 상세 작업 위치" type="text">
+    </div>
+
+    <div class="stat-bar">
+      <div class="stat"><div class="stat-num ok" id="cnt-ok">0</div><div class="stat-label">적합</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><div class="stat-num ng" id="cnt-ng">0</div><div class="stat-label">부적합</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><div class="stat-num na" id="cnt-na">0</div><div class="stat-label">해당없음</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><div class="stat-num re" id="cnt-re">0</div><div class="stat-label">미점검</div></div>
+    </div>
+
+    <div class="sections" id="sections-container"></div>
+
+    <div class="bottom-bar">
+      <button class="submit-btn" id="submit-btn" disabled onclick="handleSubmit()">점검 완료 제출</button>
+      <div class="btn-row">
+        <button class="reset-btn" onclick="resetAll()">🔄 초기화</button>
+        <button class="reset-btn" onclick="expandAll()">📋 모두 펼치기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SITES = [
+  "반포주공1단지 전기공사",
+  "힐스테이트 청주사직",
+  "기장로 수출용 신형연구로",
+  "시티오씨엘6단지1공구",
+  "블랑써밋74 2공구",
+  "충주 용산주공 재건축",
+  "왕숙푸르지오 더퍼스트1단지",
+  "킨텍스 제3전시장 일반전기공사 1공구"
+];
+
+const SECTIONS = [
+  { title:"TBM", badge:"작업 전 미팅", items:[
+    { id:"tbm1", label:"보호구착용, 개인건강상태 확인" },
+    { id:"tbm2", label:"위험성 평가에 의한 당일 작업 위험요소 전파 여부" },
+  ]},
+  { title:"건설장비", badge:"장비·고소·크레인", items:[
+    { id:"cs1", label:"작업 전 작업계획서 작성 및 장비점검 확인" },
+    { id:"cs2", label:"장비위치, 작업내용, 신호수(유도원), 관리자 및 근로자 작업계획서와 일치 여부" },
+    { id:"cs3", label:"관리감독자 배치, 작업구획 설정 신호수(유도원) 복장상태(유도봉, 사이렌, 포락) 확인" },
+    { id:"cs4", label:"고소작업대 작업 전 과상승방지봉, 비상정지장치, 비상하강장치 작동 점검" },
+    { id:"cs5", label:"고소작업대 내 소화기, 중간발판, 제원표, 작업계획서 비치 확인" },
+    { id:"cs6", label:"고소작업대 과상승방지봉 4면 하강 필요 작업 관리감독자 파악 여부" },
+    { id:"cs7", label:"이동식 크레인 자재 양중작업 전 샤클, 슬링벨트 사전 점검 여부" },
+    { id:"cs8", label:"크레인(이동식포함) 양중작업 전 신호수 타워크레인교육 이수 확인" },
+  ]},
+  { title:"공구 및 화기작업", badge:"전동공구·화기", items:[
+    { id:"tool1", label:"월별 공도구 점검 이행 확인(전동) / 피복 손상여부, 플러그, 균열 및 파손 점검" },
+    { id:"tool2", label:"화기작업 PTW 소화기구, 화재감시자 배치 확인" },
+    { id:"tool3", label:"화기작업 전 가연물 제거 및 주변환경 정리정돈 상태 확인" },
+  ]},
+  { title:"이동식 작업대", badge:"사다리·말비계", items:[
+    { id:"lad1", label:"말비계 고정핀, 낙상방지기 설치 및 외관 변형 상태 점검" },
+    { id:"lad2", label:"작업형 사다리 작업 전 외관(발판, 지주, 아웃트리거) 변형 상태 점검" },
+    { id:"lad3", label:"작업형 사다리 작업 전 주변환경(바닥 평탄성, 주변정리정돈, 미끄러운 물질) 점검" },
+    { id:"lad4", label:"승강용 사다리 최상부 결합면으로부터 내민길이 60cm 이상 확인" },
+  ]},
+  { title:"개인보호구", badge:"PPE", items:[
+    { id:"ppe1", label:"안전모 착용 및 파손 여부 확인" },
+    { id:"ppe2", label:"절연장갑 착용 및 찢김·구멍 확인" },
+    { id:"ppe3", label:"절연화 착용 및 밑창 박리 여부 확인" },
+    { id:"ppe4", label:"고소작업 시 안전대 훅·벨트 체결 상태 확인" },
+  ]},
+  { title:"전기 기계·기구", badge:"전기설비", items:[
+    { id:"eq1", label:"접지 및 누전차단기 정상 작동 (테스트 버튼 확인)" },
+    { id:"eq2", label:"분전반·제어반 문 잠금 상태 확인" },
+    { id:"eq3", label:"충전부 방호 덮개 설치 및 노출 충전부 없는지 확인" },
+    { id:"eq4", label:"LOTO(잠금/태그) 조치 확인 및 잔류전압 방전 (검전기 사용)" },
+  ]},
+  { title:"작업 환경·비상대응", badge:"환경·비상", items:[
+    { id:"env1", label:"작업 구역 출입금지·감전 위험 표지 설치 여부" },
+    { id:"env2", label:"작업장 조도 확인 및 습기·물기 제거 여부" },
+    { id:"env3", label:"C급(전기화재) 소화기 위치 및 사용 가능 여부" },
+    { id:"env4", label:"비상연락망 게시 및 숙지 (119·현장 안전관리자 번호)" },
+  ]},
+];
+
+let currentView = 'home'; 
+let selectedSite = '';
+let selectedDateKey = ''; 
+let selectedDateStr = '';
+
+// 브라우저 로컬 저장소(localStorage)에서 기존 임시/제출 데이터 무조건 연동 및 로드
+let db = JSON.parse(localStorage.getItem('safety_db')) || {};
+
+let totalItemCount = 0;
+const collapsed = {};
+
+function init() {
+  const d = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  document.getElementById('today-date').textContent =
+    `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+
+  // 1p 현장 목록 카드 동적 빌드
+  const siteContainer = document.getElementById('site-list-container');
+  SITES.forEach(site => {
+    const card = document.createElement('div');
+    card.className = 'site-card';
+    card.innerHTML = `<span class="site-name">${site}</span><span class="site-arrow">➔</span>`;
+    card.onclick = () => { selectedSite = site; navigateTo('calendar'); };
+    siteContainer.appendChild(card);
+  });
+
+  // 3p 기본 UI 프레임워크 레이아웃 빌드
+  const checklistContainer = document.getElementById('sections-container');
+  SECTIONS.forEach((sec, si) => {
+    const secDiv = document.createElement('div');
+    secDiv.className = 'section';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'section-header';
+    hdr.innerHTML = `<span class="section-title">${sec.title}</span><span class="section-badge">${sec.badge}</span><span class="section-count" id="sc-${si}">0/${sec.items.length}</span><span class="section-chevron">▾</span>`;
+    hdr.addEventListener('click', () => toggleSection(si));
+    secDiv.appendChild(hdr);
+
+    const itemsDiv = document.createElement('div');
+    itemsDiv.className = 'section-items';
+    itemsDiv.id = 'sec-' + si;
+
+    sec.items.forEach(item => {
+      totalItemCount++;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'item-wrapper';
+      wrapper.id = 'wrap-' + item.id;
+      wrapper.innerHTML = `
+        <div class="item-main" onclick="handleItemClick('${item.id}')">
+          <div class="chk-circle">
+            <svg class="chk-svg" width="12" height="12" viewBox="0 0 12 12">
+              <polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="item-label">${item.label}</div>
+          <div class="btn-group">
+            <button class="action-btn btn-ng" onclick="event.stopPropagation(); handleAction('${item.id}', 'ng')">부적합</button>
+            <button class="action-btn btn-na" onclick="event.stopPropagation(); handleAction('${item.id}', 'na')">해당없음</button>
+          </div>
+        </div>
+        <div class="ng-form">
+          <div class="ng-form-title">🛠️ 부적합 개선대책 입력</div>
+          <textarea id="textarea-${item.id}" class="ng-textarea" placeholder="발견된 문제점 및 구체적인 조치 대책을 입력하세요." oninput="saveNgText('${item.id}', this.value)"></textarea>
+          <div class="photo-row">
+            <div class="photo-col">
+              <label class="file-label" for="file-before-${item.id}">📸 사진첨부 (조치 전)</label>
+              <input type="file" id="file-before-${item.id}" class="hidden-file" accept="image/*" onchange="previewImage(this, 'prev-before-${item.id}', '${item.id}', 'photoBefore')">
+              <img id="prev-before-${item.id}" class="img-preview">
+            </div>
+            <div class="photo-col">
+              <label class="file-label" for="file-after-${item.id}">📸 사진첨부 (조치 후)</label>
+              <input type="file" id="file-after-${item.id}" class="hidden-file" accept="image/*" onchange="previewImage(this, 'prev-after-${item.id}', '${item.id}', 'photoAfter')">
+              <img id="prev-after-${item.id}" class="img-preview">
+            </div>
+          </div>
+        </div>
+      `;
+      itemsDiv.appendChild(wrapper);
+    });
+
+    secDiv.appendChild(itemsDiv);
+    checklistContainer.appendChild(secDiv);
+  });
+
+  // [📱 하드웨어 뒤로가기 버튼 감지 인터페이스 정의]
+  window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.view) {
+      applyViewChange(event.state.view);
+    } else {
+      applyViewChange('home');
+    }
+  });
+
+  // 초기 상태 등록
+  history.replaceState({ view: 'home' }, '');
+}
+
+// History API 제어용 라우팅 함수
+function navigateTo(viewName) {
+  history.pushState({ view: viewName }, '');
+  applyViewChange(viewName);
+}
+
+// 실질적인 화면 변환 및 UI 세팅 처리
+function applyViewChange(viewName) {
+  currentView = viewName;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('back-btn').style.display = viewName === 'home' ? 'none' : 'block';
+  document.getElementById('prog-container').style.display = viewName === 'checklist' ? 'block' : 'none';
+
+  if (viewName === 'home') {
+    document.getElementById('main-title').textContent = "🏢 종합전기 현장 안전관리";
+    document.getElementById('view-home').classList.add('active');
+  } else if (viewName === 'calendar') {
+    document.getElementById('main-title').textContent = selectedSite;
+    renderCalendar();
+    document.getElementById('view-calendar').classList.add('active');
+  } else if (viewName === 'checklist') {
+    document.getElementById('main-title').textContent = `⚡ 종합전기 ${selectedSite} 현장 일일 안전점검`;
+    document.getElementById('view-checklist').classList.add('active');
+  }
+}
+
+// 상단 파란색 화살표 클릭 시 브라우저 뒤로가기를 강제 호출하여 동일한 메커니즘 제공
+function handleBackBtnClick() {
+  history.back();
+}
+
+// 특정 날짜 데이터 초기화 구조 공간 매핑 생성
+function initDateStorage(key) {
+  if (!db[key]) {
+    db[key] = {
+      state: {},         
+      ngText: {},        
+      photoBefore: {},   
+      photoAfter: {},    
+      workerName: '',
+      workSite: '',
+      isSubmitted: false // 제출 여부 플래그
+    };
+    SECTIONS.forEach(sec => {
+      sec.items.forEach(item => {
+        db[key].state[item.id] = 'none';
+        db[key].ngText[item.id] = '';
+        db[key].photoBefore[item.id] = null;
+        db[key].photoAfter[item.id] = null;
+      });
+    });
+  }
+}
+
+// 3p 진입 시 선택한 날짜에 해당하는 데이터 불러와서 UI 복원
+function loadDateData(key) {
+  initDateStorage(key);
+  const data = db[key];
+
+  document.getElementById('worker-name').value = data.workerName || '';
+  document.getElementById('work-site').value = data.workSite || '';
+
+  document.getElementById('worker-name').oninput = (e) => { db[key].workerName = e.target.value; saveToLocalStorage(); };
+  document.getElementById('work-site').oninput = (e) => { db[key].workSite = e.target.value; saveToLocalStorage(); };
+
+  SECTIONS.forEach(sec => {
+    sec.items.forEach(item => {
+      const s = data.state[item.id];
+      const wrap = document.getElementById('wrap-' + item.id);
+      wrap.className = 'item-wrapper ' + (s !== 'none' ? s : '');
+
+      const txt = document.getElementById('textarea-' + item.id);
+      txt.value = data.ngText[item.id] || '';
+
+      const prevB = document.getElementById('prev-before-' + item.id);
+      if (data.photoBefore[item.id]) {
+        prevB.src = data.photoBefore[item.id];
+        prevB.style.display = 'block';
+      } else {
+        prevB.style.display = 'none';
+        prevB.src = '';
+      }
+
+      const prevA = document.getElementById('prev-after-' + item.id);
+      if (data.photoAfter[item.id]) {
+        prevA.src = data.photoAfter[item.id];
+        prevA.style.display = 'block';
+      } else {
+        prevA.style.display = 'none';
+        prevA.src = '';
+      }
+    });
+  });
+
+  updateStats();
+}
+
+// 2p 달력 생성 및 상태 마킹 적용
+function renderCalendar() {
+  const d = new Date();
+  const year = d.getFullYear(), month = d.getMonth();
+  document.getElementById('cal-month-title').textContent = `${year}년 ${month + 1}월`;
+  
+  const container = document.getElementById('cal-grid-container');
+  container.innerHTML = '';
+
+  ['일','월','화','수','목','금','토'].forEach(l => {
+    const el = document.createElement('div'); el.className = 'cal-day-label'; el.textContent = l; container.appendChild(el);
+  });
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const lastDate = new Date(year, month + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    const ec = document.createElement('div'); ec.className = 'cal-cell empty'; container.appendChild(ec);
+  }
+
+  for (let date = 1; date <= lastDate; date++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell'; cell.textContent = date;
+    if (date === d.getDate()) cell.classList.add('today');
+    
+    const dateKey = `${selectedSite}_${year}_${month + 1}_${date}`;
+    
+    // 점검 완료 제출이 확실히 처리된 날짜에만 누적 마킹 표시 적용
+    if (db[dateKey] && db[dateKey].isSubmitted) {
+      const states = Object.values(db[dateKey].state);
+      const dot = document.createElement('div');
+      const hasNg = states.includes('ng');
+      dot.className = 'cal-dot ' + (hasNg ? 'dot-ng' : 'dot-ok');
+      cell.appendChild(dot);
+    }
+
+    cell.onclick = () => {
+      const dayArr = ['일','월','화','수','목','금','토'];
+      const targetDate = new Date(year, month, date);
+      selectedDateKey = dateKey;
+      selectedDateStr = `${year}년 ${month+1}월 ${date}일 (${dayArr[targetDate.getDay()]})`;
+      document.getElementById('today-date').textContent = selectedDateStr;
+      
+      loadDateData(selectedDateKey);
+      navigateTo('checklist');
+    };
+    container.appendChild(cell);
+  }
+}
+
+// 3p 상호작용 제어 및 메모리 주입
+function handleItemClick(id) {
+  const currentStatus = db[selectedDateKey].state[id];
+  db[selectedDateKey].state[id] = (currentStatus === 'ok') ? 'none' : 'ok';
+  updateItemUI(id);
+}
+
+function handleAction(id, type) {
+  const currentStatus = db[selectedDateKey].state[id];
+  db[selectedDateKey].state[id] = (currentStatus === type) ? 'none' : type;
+  updateItemUI(id);
+}
+
+function updateItemUI(id) {
+  const s = db[selectedDateKey].state[id];
+  const wrap = document.getElementById('wrap-' + id);
+  wrap.className = 'item-wrapper ' + (s !== 'none' ? s : '');
+  updateStats();
+  saveToLocalStorage();
+}
+
+function saveNgText(id, val) {
+  db[selectedDateKey].ngText[id] = val;
+  saveToLocalStorage();
+}
+
+function previewImage(input, previewId, itemId, field) {
+  const file = input.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.getElementById(previewId);
+      img.src = e.target.result;
+      img.style.display = 'block';
+      
+      db[selectedDateKey][field][itemId] = e.target.result;
+      saveToLocalStorage();
+    }
+    reader.readAsDataURL(file);
+  }
+}
+
+// 스토리지 동기화 모듈화
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem('safety_db', JSON.stringify(db));
+  } catch(e) {
+    console.error("저장 공간 초과 혹은 브라우저 에러 발생", e);
+  }
+}
+
+function updateStats() {
+  const data = db[selectedDateKey];
+  const vals = Object.values(data.state);
+  
+  const ok = vals.filter(v=>v==='ok').length;
+  const ng = vals.filter(v=>v==='ng').length;
+  const na = vals.filter(v=>v==='na').length;
+  const re = vals.filter(v=>v==='none').length;
+
+  document.getElementById('cnt-ok').textContent = ok;
+  document.getElementById('cnt-ng').textContent = ng;
+  document.getElementById('cnt-na').textContent = na;
+  document.getElementById('cnt-re').textContent = re;
+
+  const done = ok + ng + na;
+  const pct = totalItemCount ? Math.round(done / totalItemCount * 100) : 0;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-text').textContent = `${done} / ${totalItemCount} 항목`;
+  document.getElementById('prog-pct').textContent = pct + '%';
+
+  SECTIONS.forEach((sec, si) => {
+    const checkedCount = sec.items.filter(it => data.state[it.id] !== 'none').length;
+    document.getElementById('sc-'+si).textContent = `${checkedCount}/${sec.items.length}`;
+  });
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = re > 0;
+  btn.className = 'submit-btn' + (ng>0?' has-ng':re===0?' all-ok':'');
+  
+  if (ng>0) btn.textContent = `점검 완료 제출 (부적합 ${ng}건)`;
+  else if (re===0) btn.textContent = '✅ 점검 완료 제출';
+  else btn.textContent = `점검 완료 제출 (${re}개 남음)`;
+}
+
+// [💡 중요] 최종 조치 결과 보고서 누적 저장 및 클립보드 복사
+function handleSubmit() {
+  const data = db[selectedDateKey];
+  
+  // 누적 저장 핵심: 제출됨 상태 활성화 및 스토리지 즉각 동기화 반영
+  data.isSubmitted = true;
+  saveToLocalStorage();
+
+  const ng = Object.values(data.state).filter(v=>v==='ng').length;
+  const name = document.getElementById('worker-name').value || '미입력';
+  const site = document.getElementById('work-site').value || '미입력';
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+  let report = `[종합전기 ${selectedSite} 일일 안전점검 결과]\n`;
+  report += `점검일시: ${selectedDateStr} (제출: ${dateStr})\n작업자: ${name}\n상세위치: ${site}\n`;
+  report += `최종결과: ${ng>0?'부적합 '+ng+'건 발견':'전 항목 이상 없음'}\n\n`;
+  
+  SECTIONS.forEach(sec => {
+    report += `▶ ${sec.title}\n`;
+    sec.items.forEach(item => {
+      const s = data.state[item.id];
+      let statusSign = '✅ 적합';
+      if(s === 'ng') statusSign = '❌ 부적합';
+      if(s === 'na') statusSign = '⚪ 해당없음';
+      if(s === 'none') statusSign = '⬜ 미점검';
+
+      report += `  - ${item.label} [${statusSign}]\n`;
+      
+      if (s === 'ng') {
+        report += `    ↳ 🛠️ 개선대책: ${data.ngText[item.id] || '내용 미입력'}\n`;
+        report += `    ↳ 📸 조치 전 사진: ${data.photoBefore[item.id] ? '⚙️ 첨부완료' : '❌ 미첨부'}\n`;
+        report += `    ↳ 📷 조치 후 사진: ${data.photoAfter[item.id] ? '⚙️ 첨부완료' : '❌ 미첨부'}\n`;
+      }
+    });
+    report += '\n';
+  });
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(report).then(() => {
+      showToast('점검 데이터가 기기에 저장되고 결과가 복사되었습니다!', 'success');
+    });
+  } else {
+    showToast(ng>0 ? `점검 데이터 누적 저장 완료 (부적합 ${ng}건)` : '점검 누적 저장 완료', 'success');
+  }
+}
+
+function resetAll() {
+  if (!confirm('초기화하면 현재 날짜에 작성한 모든 데이터가 삭제됩니다.')) return;
+  
+  delete db[selectedDateKey]; 
+  saveToLocalStorage();
+  loadDateData(selectedDateKey); 
+  
+  showToast('해당 날짜 데이터 초기화 완료', 'success');
+}
+
+function toggleSection(si) {
+  collapsed[si] = !collapsed[si];
+  const items = document.getElementById('sec-' + si);
+  const hdr = items.previousElementSibling;
+  if (collapsed[si]) { items.classList.add('hidden'); hdr.classList.add('collapsed'); }
+  else { items.classList.remove('hidden'); hdr.classList.remove('collapsed'); }
+}
+
+function expandAll() {
+  SECTIONS.forEach((_, si) => {
+    collapsed[si] = false;
+    document.getElementById('sec-'+si).classList.remove('hidden');
+    document.getElementById('sec-'+si).previousElementSibling.classList.remove('collapsed');
+  });
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 2800);
+}
+
+// PWA manifest 생성
+const manifest = {
+  name: "종합전기 일일 안전점검", short_name: "안전점검", start_url: ".", display: "standalone",
+  background_color: "#f0f2f5", theme_color: "#1a3a5c",
+  icons: [{
+    src: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="#1a3a5c"/><text y="130" x="96" text-anchor="middle" font-size="110" font-family="Arial">⚡</text></svg>'),
+    sizes: "192x192", type: "image/svg+xml"
+  }]
+};
+document.getElementById('manifest-placeholder').href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type:'application/json'}));
+
+init();
+</script>
+</body>
+</html>
